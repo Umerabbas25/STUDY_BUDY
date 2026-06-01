@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <title>StudyBud</title>
+</head>
+<body>
+    <div class="layout">
+        {% include 'navbar.html' %}
+
+        <main class="container">
+            {% block content%}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- ── AI Chatbot Widget ── -->
+    <div class="ai-bot-toggle" id="ai-toggle-btn" title="Ask Study Assistant">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1v2h-1c0 3.86-3.14 7-7 7H9c-3.86 0-7-3.14-7-7H1v-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM9 9a5 5 0 0 0-5 5h16a5 5 0 0 0-5-5H9zm1 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm6 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
+    </div>
+
+    <div class="ai-chat-window" id="ai-chat-window">
+        <div class="ai-chat-header">
+            <h4>Study Assistant ✨</h4>
+            <button id="ai-close-btn" style="background:none; border:none; color:var(--color-light); cursor:pointer;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div class="ai-chat-messages" id="ai-messages">
+            <div class="ai-msg bot">Hi! I'm your AI Study Assistant. What are you studying today?</div>
+        </div>
+        <form id="ai-chat-form" class="ai-chat-input">
+            <input type="text" id="ai-input" placeholder="Ask a question..." autocomplete="off" required>
+            <button type="submit">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // AI Chatbot Logic
+        const aiToggle = document.getElementById('ai-toggle-btn');
+        const aiWindow = document.getElementById('ai-chat-window');
+        const aiClose = document.getElementById('ai-close-btn');
+        const aiForm = document.getElementById('ai-chat-form');
+        const aiInput = document.getElementById('ai-input');
+        const aiMessages = document.getElementById('ai-messages');
+
+        // Extract context safely from django template tags if available
+        let roomNameContext = 'General Study';
+        let topicNameContext = 'General';
+        try {
+            const h3 = document.querySelector('.room__topLeft h3');
+            const topic = document.querySelector('.room__topic');
+            if(h3) roomNameContext = h3.innerText;
+            if(topic) topicNameContext = topic.innerText;
+        } catch(e) {}
+
+        aiToggle.addEventListener('click', () => {
+            aiWindow.style.display = aiWindow.style.display === 'flex' ? 'none' : 'flex';
+            if (aiWindow.style.display === 'flex') aiInput.focus();
+        });
+
+        aiClose.addEventListener('click', () => {
+            aiWindow.style.display = 'none';
+        });
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = 'ai-msg ' + sender;
+            // simple markdown for bolding
+            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            div.innerHTML = html;
+            aiMessages.appendChild(div);
+            aiMessages.scrollTop = aiMessages.scrollHeight;
+        }
+
+        aiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = aiInput.value.trim();
+            if(!text) return;
+
+            appendMessage(text, 'user');
+            aiInput.value = '';
+            
+            // show loading
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'ai-msg bot';
+            loadingDiv.innerText = '...';
+            loadingDiv.id = 'ai-loading';
+            aiMessages.appendChild(loadingDiv);
+            aiMessages.scrollTop = aiMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/api/ai-chat/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: text,
+                        room_name: roomNameContext,
+                        topic_name: topicNameContext
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('ai-loading').remove();
+                
+                if(data.response) {
+                    appendMessage(data.response, 'bot');
+                } else {
+                    appendMessage("Error: " + data.error, 'bot');
+                }
+            } catch(err) {
+                document.getElementById('ai-loading').remove();
+                appendMessage("Failed to connect to AI server.", 'bot');
+            }
+        });
+    </script>
+</body>
+</html>

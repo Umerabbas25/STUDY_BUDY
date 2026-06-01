@@ -1,0 +1,129 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="home-container">
+    
+    <!-- Topics Component -->
+    <div class="topics">
+        <div class="topics__header">
+            <h2>BROWSE TOPICS</h2>
+        </div>
+        <ul class="topics__list">
+            <li>
+                <a href="/">All</a>
+                <span class="topic-count" style="background: var(--color-dark-medium); color: var(--color-light); padding: 0.2rem 0.6rem;">{{topics.count}}</span>
+            </li>
+            {% for topic in topics %}
+            <li>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <a href="/?q={{topic.name}}">{{topic.name}} ({{topic.room_set.count}})</a>
+                    {% if request.user.is_authenticated %}
+                        {% if topic.id in followed_topic_ids %}
+                        <a href="{% url 'follow-topic' topic.id %}?next={{request.path}}"
+                           class="btn"
+                           style="font-size:0.8rem; padding:0.3rem 0.6rem; background:var(--color-main); color:var(--color-bg); border-radius:4px;">
+                           Following
+                        </a>
+                        {% else %}
+                        <a href="{% url 'follow-topic' topic.id %}?next={{request.path}}"
+                           class="btn"
+                           style="font-size:0.8rem; padding:0.3rem 0.6rem; background:var(--color-dark-medium); color:var(--color-light); border-radius:4px;">
+                           Follow
+                        </a>
+                        {% endif %}
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn"
+                       style="font-size:0.8rem; padding:0.3rem 0.6rem; background:var(--color-dark-medium); color:var(--color-light); border-radius:4px;"
+                       title="Login to follow">Follow</a>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Room Feed Component -->
+    <div class="roomList">
+        <div class="roomList__header">
+            <div>
+                <h2>ROOMS</h2>
+                <p>{{room_count}} Rooms available</p>
+            </div>
+            <a href="{% url 'create-room' %}" class="btn btn--main">
+                <svg style="width: 15px; margin-right: 5px; fill: var(--color-bg);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/></svg>
+                Create Room
+            </a>
+        </div>
+
+        {% for room in rooms %}
+        <div class="roomList__room">
+            <div class="roomList__room__header">
+                <a href="{% url 'user-profile' room.host.id %}" class="roomList__room__author">
+                    <div class="avatar avatar--small">
+                        <img src="https://ui-avatars.com/api/?name={{room.host.username}}&background=random" />
+                    </div>
+                    <span>@{{room.host.username}}</span>
+                </a>
+                <span>{{room.created|timesince}} ago</span>
+            </div>
+            <div class="roomList__room__title">
+                <a href="{% url 'room' room.id %}">{{room.name}}</a>
+            </div>
+            <div class="roomList__room__meta">
+                <div class="roomList__room__players">
+                    <span class="roomList__room__joined">
+                        <svg style="width: 15px; fill: var(--color-dark-light);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M144 0a80 80 0 1 1 0 160A80 80 0 1 1 144 0zM512 0a80 80 0 1 1 0 160A80 80 0 1 1 512 0zM0 298.7C0 239.8 47.8 192 106.7 192h42.7c15.9 0 31 3.5 44.6 9.7c-1.3 7.2-1.9 14.7-1.9 22.3c0 38.2 16.8 72.5 43.3 96c-.2 0-.4 0-.7 0H21.3C9.6 320 0 310.4 0 298.7zM405.3 320c-.2 0-.4 0-.7 0c26.6-23.5 43.3-57.8 43.3-96c0-7.6-.7-15-1.9-22.3c13.6-6.3 28.7-9.7 44.6-9.7h42.7C592.2 192 640 239.8 640 298.7c0 11.8-9.6 21.3-21.3 21.3H405.3zM224 224a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zM128 485.3C128 411.7 187.7 352 261.3 352H378.7C452.3 352 512 411.7 512 485.3c0 14.7-11.9 26.7-26.7 26.7H154.7c-14.7 0-26.7-11.9-26.7-26.7z"/></svg> 3 Joined
+                    </span>
+                </div>
+                <div class="roomList__room__topic">{{room.topic.name}}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Activities Component -->
+    <div class="activities-wrapper">
+        <div class="activities__header" style="background: transparent; padding-left: 0;">
+            <h2>TOP HOSTS</h2>
+        </div>
+        <div class="activities" style="background: var(--color-dark); padding: 1.5rem; margin-bottom: 2rem;">
+            {% for room in rooms|slice:":3" %}
+            <div class="hostList">
+                <a href="{% url 'user-profile' room.host.id %}" class="hostList__user" style="color: var(--color-light);">
+                    <div class="avatar avatar--small">
+                        <img src="https://ui-avatars.com/api/?name={{room.host.username}}&background=random" />
+                    </div>
+                    <p>{{room.host.username}}</p>
+                </a>
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'user-profile' room.host.id %}" class="btn btn--main" style="padding: 0.2rem 0.5rem; font-size:0.8rem; background-color: var(--color-dark-medium); color: var(--color-main); border: 1px solid var(--color-main);">Follow</a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn--main" style="padding: 0.2rem 0.5rem; font-size:0.8rem; background-color: var(--color-dark-medium); color: var(--color-light);" title="Login to follow">Follow</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="activities__header" style="background: transparent; padding-left: 0;">
+            <h2>RECENT ACTIVITIES</h2>
+        </div>
+        <div class="activities">
+            {% for message in room_messages %}
+            <div class="activities__box">
+                <div class="activities__boxHeader">
+                    <a href="{% url 'user-profile' message.user.id %}" class="roomList__room__author">
+                        <div class="avatar avatar--small">
+                            <img src="https://ui-avatars.com/api/?name={{message.user.username}}&background=random" />
+                        </div>
+                        <p>@{{message.user.username}} <br> <span>replied to post "{{message.room.name}}"</span></p>
+                    </a>
+                    <span class="time">{{message.created|timesince}}</span>
+                </div>
+                <div class="activities__boxContent">
+                    {{message.body|truncatechars:50}}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

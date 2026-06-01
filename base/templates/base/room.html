@@ -1,0 +1,334 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<main class="room-page layout layout--2">
+  <div class="container">
+
+    <!-- ── ROOM PANEL ────────────────────────────────── -->
+    <div class="room">
+
+      <!-- Header bar -->
+      <div class="room__top">
+        <div class="room__topLeft">
+          <a href="{% url 'home' %}">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="var(--color-light-gray)" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.723 2.286l-13.723 13.714 13.719 13.714 1.616-1.611-10.96-10.96h27.625v-2.286h-27.625l10.965-10.965z"/>
+            </svg>
+          </a>
+          <h3>{{ room.name }}</h3>
+          <button id="summarize-btn" class="btn-ai" style="margin-left: 1rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            Summarize
+          </button>
+        </div>
+        {% if room.host == request.user %}
+        <div class="room__topRight">
+          <a href="{% url 'update-room' room.id %}" title="Edit Room">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--color-light-gray)" xmlns="http://www.w3.org/2000/svg">
+              <path d="m23.5 22h-15c-.276 0-.5-.224-.5-.5s.224-.5.5-.5h15c.276 0 .5.224.5.5s-.224.5-.5.5z"/>
+              <path d="m2.5 22c-.131 0-.259-.052-.354-.146-.123-.123-.173-.3-.133-.468l1.09-4.625c.021-.09.067-.173.133-.239l14.143-14.143c.565-.566 1.554-.566 2.121 0l2.121 2.121c.283.283.439.66.439 1.061s-.156.778-.439 1.061l-14.142 14.141c-.065.066-.148.112-.239.133l-4.625 1.09c-.038.01-.077.014-.115.014zm1.544-4.873-.872 3.7 3.7-.872 14.042-14.041c.095-.095.146-.22.146-.354 0-.133-.052-.259-.146-.354l-2.121-2.121c-.19-.189-.518-.189-.707 0zm3.081 3.283h.01z"/>
+            </svg>
+          </a>
+          <a href="{% url 'delete-room' room.id %}" title="Delete Room">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="var(--color-light-gray)" xmlns="http://www.w3.org/2000/svg">
+              <path d="M27.314 6.019l-1.333-1.333-9.98 9.981-9.981-9.981-1.333 1.333 9.981 9.981-9.981 9.98 1.333 1.333 9.981-9.98 9.98 9.98 1.333-1.333-9.98-9.98z"/>
+            </svg>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Room meta -->
+      <div class="room__meta">
+        <div class="room__metaLeft">
+          <a href="{% url 'user-profile' room.host.id %}" class="room__author">
+            <div class="avatar avatar--small">
+              <img src="https://ui-avatars.com/api/?name={{ room.host.username }}&background=random"/>
+            </div>
+            <div>
+              <span class="room__hostLabel">Hosted by</span>
+              <span class="room__hostName">@{{ room.host.username }}</span>
+            </div>
+          </a>
+          <span class="room__topic tag">{{ room.topic.name }}</span>
+        </div>
+        <span class="room__time">{{ room.created|timesince }} ago</span>
+      </div>
+
+      {% if room.description %}
+      <div class="room__description">
+        {{ room.description }}
+      </div>
+      {% endif %}
+
+      <!-- ── COMMENT THREAD ── -->
+      <div class="thread-list" id="thread-list">
+        {% for message in room_messages %}
+        <div class="comment" id="comment-{{ message.id }}">
+
+          <!-- Comment header -->
+          <div class="comment__header">
+            <a href="{% url 'user-profile' message.user.id %}" class="comment__author">
+              <div class="avatar avatar--small">
+                <img src="https://ui-avatars.com/api/?name={{ message.user.username }}&background=random"/>
+              </div>
+              <div>
+                <span class="comment__username">@{{ message.user.username }}</span>
+                {% if message.user == room.host %}
+                <span class="comment__hostBadge">HOST</span>
+                {% endif %}
+              </div>
+            </a>
+            <div class="comment__actions">
+              <span class="comment__time">{{ message.created|timesince }} ago</span>
+              {% if request.user.is_authenticated %}
+              <button class="reply-btn" data-id="{{ message.id }}" data-user="@{{ message.user.username }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.5l-4-4 4-4v3h6c2.2 0 4 1.8 4 4v1h-2v-1c0-1.1-.9-2-2-2H9v3z"/></svg>
+                Reply
+              </button>
+              {% endif %}
+              {% if request.user == message.user %}
+              <a href="{% url 'delete-message' message.id %}" class="comment__delete" title="Delete">
+                <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor"><path d="M27.314 6.019l-1.333-1.333-9.98 9.981-9.981-9.981-1.333 1.333 9.981 9.981-9.981 9.98 1.333 1.333 9.981-9.98 9.98 9.98 1.333-1.333-9.98-9.98z"/></svg>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Comment body -->
+          <div class="comment__body">{{ message.body }}</div>
+
+          <!-- ── REPLIES ── -->
+          {% if message.replies.all %}
+          <div class="replies">
+            {% for reply in message.replies.all %}
+            <div class="reply" id="comment-{{ reply.id }}">
+              <div class="reply__line"></div>
+              <div class="reply__content">
+                <div class="comment__header">
+                  <a href="{% url 'user-profile' reply.user.id %}" class="comment__author">
+                    <div class="avatar" style="width:1.8rem;height:1.8rem;">
+                      <img src="https://ui-avatars.com/api/?name={{ reply.user.username }}&background=random"/>
+                    </div>
+                    <div>
+                      <span class="comment__username">@{{ reply.user.username }}</span>
+                      {% if reply.user == room.host %}
+                      <span class="comment__hostBadge">HOST</span>
+                      {% endif %}
+                    </div>
+                  </a>
+                  <div class="comment__actions">
+                    <span class="comment__time">{{ reply.created|timesince }} ago</span>
+                    {% if request.user == reply.user %}
+                    <a href="{% url 'delete-message' reply.id %}" class="comment__delete" title="Delete">
+                      <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor"><path d="M27.314 6.019l-1.333-1.333-9.98 9.981-9.981-9.981-1.333 1.333 9.981 9.981-9.981 9.98 1.333 1.333 9.981-9.98 9.98 9.98 1.333-1.333-9.98-9.98z"/></svg>
+                    </a>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="comment__body">{{ reply.body }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Inline reply form (hidden by default) -->
+          {% if request.user.is_authenticated %}
+          <div class="inline-reply-form" id="reply-form-{{ message.id }}" style="display:none;">
+            <form action="" method="POST">
+              {% csrf_token %}
+              <input type="hidden" name="reply_to" value="{{ message.id }}">
+              <div class="inline-reply-form__inner">
+                <div class="avatar" style="width:1.8rem;height:1.8rem;flex-shrink:0;">
+                  <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=random"/>
+                </div>
+                <input type="text" name="body" id="reply-input-{{ message.id }}" placeholder="Replying to @{{ message.user.username }}..." autocomplete="off" required/>
+                <button type="submit" class="btn btn--main" style="padding:0.4rem 1rem;font-size:0.85rem;">Post</button>
+                <button type="button" class="btn btn-ai suggest-reply-btn" data-id="{{ message.id }}" style="padding:0.4rem 0.8rem; font-size: 0.8rem;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-1.3l-.85-.6C7.8 13.11 7 11.13 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.13-.8 4.11-2.15 5.1z"/></svg>
+                  AI Suggest
+                </button>
+                <button type="button" class="btn cancel-reply-btn" data-id="{{ message.id }}" style="padding:0.4rem 0.8rem;font-size:0.85rem;background:var(--color-dark-medium);color:var(--color-light);">Cancel</button>
+              </div>
+              <div class="ai-reply-suggestions" id="suggestions-{{ message.id }}"></div>
+            </form>
+          </div>
+          {% endif %}
+
+        </div>
+        {% empty %}
+        <div class="no-comments">
+          <p>No comments yet. Be the first to start the discussion!</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- ── MAIN COMMENT INPUT ── -->
+      <div class="room__message">
+        {% if request.user.is_authenticated %}
+        <form action="" method="POST" class="main-comment-form">
+          {% csrf_token %}
+          <div class="main-comment-form__inner">
+            <div class="avatar avatar--small" style="flex-shrink:0;">
+              <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=random"/>
+            </div>
+            <input type="text" name="body" id="main-input" placeholder="Write a comment..." autocomplete="off" required/>
+            <button type="submit" class="btn btn--main" style="padding:0.6rem 1.2rem;">Post</button>
+          </div>
+        </form>
+        {% else %}
+        <p class="login-prompt">
+          <a href="{% url 'login' %}">Login</a> to join the discussion.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── PARTICIPANTS SIDEBAR ── -->
+    <div class="participants">
+      <div class="participants__top">
+        <h3>Participants</h3>
+        <span class="participants__count">
+          {{ room_messages.count }} comment{{ room_messages.count|pluralize }}
+        </span>
+      </div>
+      <div class="participants__list scroll">
+        <div class="participant">
+          <a href="{% url 'user-profile' room.host.id %}" class="participant__info">
+            <div class="avatar avatar--small">
+              <img src="https://ui-avatars.com/api/?name={{ room.host.username }}&background=random"/>
+            </div>
+            <div>
+              <p>@{{ room.host.username }}</p>
+              <span class="comment__hostBadge" style="font-size:0.65rem;">HOST</span>
+            </div>
+          </a>
+        </div>
+        {% for message in room_messages %}
+        {% if message.user != room.host %}
+        <div class="participant">
+          <a href="{% url 'user-profile' message.user.id %}" class="participant__info">
+            <div class="avatar avatar--small">
+              <img src="https://ui-avatars.com/api/?name={{ message.user.username }}&background=random"/>
+            </div>
+            <p>@{{ message.user.username }}</p>
+          </a>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ── AI Summary Modal ── -->
+<div class="ai-summary-modal" id="summary-modal">
+  <div class="ai-summary-content">
+    <button class="modal-close" id="close-modal-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="ai-summary-header">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="url(#grad1)"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed" /><stop offset="100%" stop-color="#db2777" /></linearGradient></defs><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <h3>AI Room Summary</h3>
+    </div>
+    <div class="ai-summary-body" id="summary-body">
+      <p style="text-align:center; padding: 2rem;">Generating summary using Gemini... <br><br> <small>(This may take a few seconds)</small></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── JS: toggle inline reply forms & AI logic ── -->
+<script>
+  // 1. Reply Forms
+  document.querySelectorAll('.reply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const form = document.getElementById('reply-form-' + id);
+      document.querySelectorAll('.inline-reply-form').forEach(f => {
+        if (f.id !== 'reply-form-' + id) f.style.display = 'none';
+      });
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        form.querySelector('input[name="body"]').focus();
+      }
+    });
+  });
+
+  document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('reply-form-' + btn.dataset.id).style.display = 'none';
+    });
+  });
+
+  // 2. AI Summarizer
+  const summarizeBtn = document.getElementById('summarize-btn');
+  const summaryModal = document.getElementById('summary-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const summaryBody = document.getElementById('summary-body');
+
+  if(summarizeBtn) {
+    summarizeBtn.addEventListener('click', async () => {
+      summaryModal.style.display = 'flex';
+      summaryBody.innerHTML = '<p style="text-align:center; padding: 2rem;">Generating summary using Groq Llama-3... <br><br> <small>(This is insanely fast!)</small></p>';
+      try {
+        const response = await fetch(`/api/rooms/{{room.id}}/summarize/`);
+        const data = await response.json();
+        if(data.summary) {
+          // simple markdown bullet parser
+          let html = data.summary.replace(/\n\*/g, '<br>•').replace(/\n-/g, '<br>•');
+          html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          summaryBody.innerHTML = `<p>${html}</p>`;
+        } else {
+          summaryBody.innerHTML = `<p style="color: #e05260">Error: ${data.error}</p>`;
+        }
+      } catch(err) {
+        summaryBody.innerHTML = `<p style="color: #e05260">Failed to connect to AI server.</p>`;
+      }
+    });
+  }
+
+  if(closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+      summaryModal.style.display = 'none';
+    });
+  }
+
+  // 3. AI Smart Replies
+  document.querySelectorAll('.suggest-reply-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const msgId = btn.dataset.id;
+      const suggContainer = document.getElementById('suggestions-' + msgId);
+      
+      btn.innerHTML = 'Thinking...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/messages/${msgId}/suggest-reply/`, {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') } // Note: we rely on session cookie mostly here but kept for DRF config
+        });
+        const data = await response.json();
+        
+        suggContainer.innerHTML = '';
+        if(data.suggestions) {
+          data.suggestions.forEach(sugg => {
+            const chip = document.createElement('div');
+            chip.className = 'ai-chip';
+            chip.innerText = sugg;
+            chip.onclick = () => {
+              document.getElementById('reply-input-' + msgId).value = sugg;
+            };
+            suggContainer.appendChild(chip);
+          });
+        }
+      } catch(err) {
+        suggContainer.innerHTML = '<span style="color:red; font-size:0.8rem">Failed to load suggestions</span>';
+      }
+
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-1.3l-.85-.6C7.8 13.11 7 11.13 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.13-.8 4.11-2.15 5.1z"/></svg> AI Suggest`;
+      btn.disabled = false;
+    });
+  });
+</script>
+{% endblock %}
