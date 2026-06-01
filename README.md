@@ -66,12 +66,3 @@ python manage.py migrate
 python manage.py runserver
 ```
 Visit `http://127.0.0.1:8000` in your browser.
-
-## 📸 Screenshots
-*(Add screenshots of your application here once deployed!)*
-
-## 🤝 Contributing
-Contributions, issues, and feature requests are welcome!
-
-## 📜 License
-This project is [MIT](https://choosealicense.com/licenses/mit/) licensed.
